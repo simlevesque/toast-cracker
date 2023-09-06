@@ -43,7 +43,7 @@ export default function ToastCracker() {
                     color: validHash.value ? "lightgreen" : "red",
                   }}
                 >
-                  {validHash.value.toString()}
+                  {(validHash.value || false).toString()}
                 </span>
               </b>
             </p>
@@ -55,29 +55,33 @@ export default function ToastCracker() {
                     color: validWallet.value ? "lightgreen" : "red",
                   }}
                 >
-                  {validWallet.value.toString()}
+                  {(validWallet.value || false).toString()}
                 </span>
               </b>
             </p>
+            {validWallet.value && validHash.value ? <>
+              <p class="my-4 text-center">
+                <b>Accounts: {wallet.value.accounts.length}</b>
+                <ul>
+                  {Object.values(wallet.value.accounts).map((acc) => (
+                    <li>{acc.nickname}</li>
+                  ))}
+                </ul>
+              </p>
             <p class="my-4 text-center">
-              <b>Accounts: {wallet.value.accounts.length}</b>
-              <ul>
-                {Object.values(wallet.value.accounts).map((acc) => (
-                  <li>{acc.nickname}</li>
-                ))}
-              </ul>
+              <b>
+                Pin: </b>{pin.value || 'Loading...'}
             </p>
-          <p class="my-4 text-center">
-            <b>
-              Pin: </b>{pin.value || 'Loading...'}
-            
-          </p>
+            </>: undefined}
           </div>
         )}
     </>
   );
 
   async function crackWallet(file: string) {
+    if (!file) {
+      return
+    }
     const walletFileCleaned = ("" + file).trim();
     const hash = walletFileCleaned.slice(0, 8);
     const walletStr = walletFileCleaned.slice(8);
@@ -85,6 +89,7 @@ export default function ToastCracker() {
     if (hash !== sodium.crypto_generichash(4, walletStr, "", "hex")) {
       console.error("Invalid hash");
       validHash.value = false;
+      wallet.value = {};
       return;
     }
     const _wallet = JSON.parse(walletStr);
@@ -95,6 +100,7 @@ export default function ToastCracker() {
     ) {
       console.error("Invalid wallet");
       validWallet.value = false;
+      wallet.value = {};
       return;
     }
 
