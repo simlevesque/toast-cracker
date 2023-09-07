@@ -10,26 +10,33 @@ const pin = signal<undefined | any>(undefined);
 const recoveryPhrase = signal<undefined | any>(undefined);
 
 export default function ToastCracker() {
-  const initialValue =
-    '';
+  const initialValue = "";
 
   return (
     <>
-      <div class="gap-2 py-6">
-
-      <p class="my-4 text-center">Paste backup here:
+      <div
+        class="gap-2 py-6"
+        style="width: 100%;"
+      >
+        <p class="my-4 text-center">
+          Paste backup here:
         </p>
-        <textarea id="recovery" value={initialValue}></textarea>
+        <textarea
+          id="recovery"
+          value={initialValue}
+          style="width: 100%; min-height: 150px;"
+        >
+        </textarea>
       </div>
 
       <div class="gap-2 py-6">
         <Button
-            type="submit"
-            onClick={() => {
-              crackWallet(document.getElementById("recovery")!.value);
-            }}
-          >
-            Start
+          type="submit"
+          onClick={() => {
+            crackWallet(document.getElementById("recovery")!.value);
+          }}
+        >
+          Start
         </Button>
       </div>
       {wallet.value &&
@@ -59,20 +66,26 @@ export default function ToastCracker() {
                 </span>
               </b>
             </p>
-            {validWallet.value && validHash.value ? <>
-              <p class="my-4 text-center">
-                <b>Accounts: {wallet.value.accounts.length}</b>
-                <ul>
-                  {Object.values(wallet.value.accounts).map((acc) => (
-                    <li>{acc.nickname}</li>
-                  ))}
-                </ul>
-              </p>
-            <p class="my-4 text-center">
-              <b>
-                Pin: </b>{pin.value || 'Loading...'}
-            </p>
-            </>: undefined}
+            {validWallet.value && validHash.value
+              ? (
+                <>
+                  <p class="my-4 text-center">
+                    <b>Accounts: {wallet.value.accounts.length}</b>
+                    <ul>
+                      {Object.values(wallet.value.accounts).map((acc) => (
+                        <li>{acc.nickname}</li>
+                      ))}
+                    </ul>
+                  </p>
+                  <p class="my-4 text-center">
+                    <b>
+                      Pin:
+                    </b>
+                    {pin.value || "Loading..."}
+                  </p>
+                </>
+              )
+              : undefined}
           </div>
         )}
     </>
@@ -80,7 +93,7 @@ export default function ToastCracker() {
 
   async function crackWallet(file: string) {
     if (!file) {
-      return
+      return;
     }
     const walletFileCleaned = ("" + file).trim();
     const hash = walletFileCleaned.slice(0, 8);
@@ -110,20 +123,20 @@ export default function ToastCracker() {
     wallet.value = _wallet;
 
     const _pin = await crackPin(wallet.value!.pindata);
-    pin.value = _pin
+    pin.value = _pin;
 
-    return
+    return;
 
     const _recoveryPhrase = await crackRecoveryPhrase(_wallet.rpdata);
     console.log("Recovery passphrase: ", _recoveryPhrase);
-    recoveryPhrase.value = _recoveryPhrase
+    recoveryPhrase.value = _recoveryPhrase;
   }
 
   function crackPin(pindata: any) {
     console.time("Got pin");
     return new Promise((resolve, reject) => {
       const workers = new Array(10).fill(null).map((_, i) => {
-        console.log('Starting worker')
+        console.log("Starting worker");
         const worker = new Worker("/pin-worker.js");
         worker.addEventListener("message", (e) => {
           workers.forEach((w) => w.terminate());
@@ -145,36 +158,34 @@ export default function ToastCracker() {
     });
   }
 
-
   /**
-   * 
    * @param {{
    *  salt1: string,
-  *  salt2: string,
-  *  hash: string
-  *}} rpdata 
-  */
+   *  salt2: string,
+   *  hash: string
+   * }} rpdata
+   */
   function crackRecoveryPhrase(rpdata) {
-    console.time('Got recovery passphrase')
+    console.time("Got recovery passphrase");
     return new Promise((resolve, reject) => {
-        const workers = new Array(24).fill(null).map((_, i) => {
-            const worker = new Worker('/recovery-phrase-worker.js');
-              worker.addEventListener('message', (e) => {
-                workers.forEach(w => w.terminate())
-                console.timeEnd('Got recovery passphrase')
-                resolve(e.data)
-              });
-              worker.addEventListener('error', console.error);
-              worker.addEventListener('exit', (code) => {
-                if (code !== 0)
-                  console.error(new Error(`Worker stopped with exit code ${code}`));
-              });
-              worker.postMessage({
-                workerData: { rpdata, start: Math.floor(i) }
-              });
-              return worker
-        })
-    })
-
+      const workers = new Array(24).fill(null).map((_, i) => {
+        const worker = new Worker("/recovery-phrase-worker.js");
+        worker.addEventListener("message", (e) => {
+          workers.forEach((w) => w.terminate());
+          console.timeEnd("Got recovery passphrase");
+          resolve(e.data);
+        });
+        worker.addEventListener("error", console.error);
+        worker.addEventListener("exit", (code) => {
+          if (code !== 0) {
+            console.error(new Error(`Worker stopped with exit code ${code}`));
+          }
+        });
+        worker.postMessage({
+          workerData: { rpdata, start: Math.floor(i) },
+        });
+        return worker;
+      });
+    });
   }
 }
